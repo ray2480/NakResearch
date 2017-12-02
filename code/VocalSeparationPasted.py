@@ -55,3 +55,12 @@ mask_v = librosa.util.softmask(S_full - S_filter,
 
 S_foreground = mask_v * S_full
 S_background = mask_i * S_full
+
+##audioに変換
+foreground = librosa.istft(S_foreground)
+background = librosa.istft(S_background)
+
+#出力
+librosa.output.write_wav(' 01.Track_1.foreground.wav', foreground, sr)
+librosa.output.write_wav(' 01.Track_1.background.wav', background, sr)
+librosa.output.write_wav(' 01.Track_1.foreground.wav', foreground, sr)
