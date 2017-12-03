@@ -74,6 +74,7 @@ librosa.output.write_wav(' 01.Track_1.background_percussive.wav', background_per
 #rmse log energy novelty function
 hop_length = 512
 frame_length = 1024
+rmse = librosa.feature.rmse(background_percussive, frame_length=frame_length, hop_length=hop_length).flatten()
 log_rmse = np.log1p(10*rmse)
 log_rmse_diff = np.zeros_like(log_rmse)
 log_rmse_diff[1:] = np.diff(log_rmse)
@@ -86,3 +87,34 @@ plt.plot(t, log_rmse, 'b--', t, log_rmse_diff, 'g--^', t, log_energy_novelty, 'r
 plt.xlim(0, t.max())
 plt.xlabel('Time (sec)')
 plt.legend(('log RMSE', 'delta log RMSE', 'log energy novelty')) 
+
+#librosaの関数でnovelty functionのonset_envelop生成(hop_length違う）
+hop_length = 256
+onset_envelope = librosa.onset.onset_strength(background_percussive, sr=sr, hop_length=hop_length)
+
+#onset_envelopの描画
+N = len(background_percussive)
+T = N/float(sr)
+t = np.linspace(0, T, len(onset_envelope))
+
+plt.plot(t, onset_envelope)
+plt.xlabel('Time (sec)')
+plt.xlim(xmin=0)
+plt.ylim(0)
+
+#peak_picking
+onset_frames = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.5, 5)
+
+#検出したピークに縦線を描画(カラーバー）
+plt.plot(t, onset_envelope)
+plt.vlines(t[onset_frames], 0, onset_envelope.max(), color='r', alpha=0.7)
+plt.xlabel('Time (sec)')
+plt.xlim(0, T)
+plt.ylim(0)
+
+#検出したピークにクリック音を入れる
+clicks = librosa.clicks(frames=onset_frames, sr=sr, hop_length=hop_length, length=N)
+
+#クリック音と共に出力
+librosa.output.write_wav('01.Track_1.background_percussive_click.wav', background_percussive+clicks, sr)
+
