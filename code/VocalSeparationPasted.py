@@ -63,4 +63,10 @@ background = librosa.istft(S_background)
 #出力
 librosa.output.write_wav(' 01.Track_1.foreground.wav', foreground, sr)
 librosa.output.write_wav(' 01.Track_1.background.wav', background, sr)
-librosa.output.write_wav(' 01.Track_1.foreground.wav', foreground, sr)
+
+
+#harmonicとpercussiveに分離
+H_background, P_background = librosa.decompose.hpss(S_background)
+S_background_harmonic, S_background_percussive = librosa.decompose.hpss(S_background)
+background_percussive = librosa.istft(S_background_percussive)
+librosa.output.write_wav(' 01.Track_1.background_percussive.wav', background_percussive, sr)
