@@ -70,3 +70,19 @@ H_background, P_background = librosa.decompose.hpss(S_background)
 S_background_harmonic, S_background_percussive = librosa.decompose.hpss(S_background)
 background_percussive = librosa.istft(S_background_percussive)
 librosa.output.write_wav(' 01.Track_1.background_percussive.wav', background_percussive, sr)
+
+#rmse log energy novelty function
+hop_length = 512
+frame_length = 1024
+log_rmse = np.log1p(10*rmse)
+log_rmse_diff = np.zeros_like(log_rmse)
+log_rmse_diff[1:] = np.diff(log_rmse)
+
+log_energy_novelty = np.max([np.zeros_like(log_rmse_diff), log_rmse_diff], axis=0)
+
+#グラフ表示
+plt.figure(figsize=(15, 6))
+plt.plot(t, log_rmse, 'b--', t, log_rmse_diff, 'g--^', t, log_energy_novelty, 'r-')
+plt.xlim(0, t.max())
+plt.xlabel('Time (sec)')
+plt.legend(('log RMSE', 'delta log RMSE', 'log energy novelty')) 
