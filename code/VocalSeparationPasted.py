@@ -150,3 +150,5 @@ _ticks_per_beat = 480 #デフォルト
 _sixteenth_sec = beat_times_sixteenths[1] - beat_times_sixteenths[0] #単位あたりの16分音符の秒での長さ
 #16分音符のtickでの単位あたりの長さ
 sixteenth_tick = int(mido.second2tick(_sixteenth_sec, ticks_per_beat=_ticks_per_beat, tempo=mido.bpm2tempo(_song_bpm)))
+#各音符の配置される場所（tick)
+beat_times_ticks = sixteenths_index * sixteenth_tick
