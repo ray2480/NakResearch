@@ -143,5 +143,10 @@ for onset in librosa.frames_to_time(onset_frames, sr=sr, hop_length=hop_length):
 clicks = librosa.clicks(beat_times_omitted_quantized, sr=sr, length=len(background_percussive))
 librosa.output.write_wav(' 01.Track_1.background_percussive_quantized.wav', background_percussive+clicks, sr)
 
-#オンセットの位置を小節で考える
-beat_times_omitted_quantized = 
+import mido
+#MIDIデータの作成
+_song_bpm = 90 #曲のbpm
+_ticks_per_beat = 480 #デフォルト
+_sixteenth_sec = beat_times_sixteenths[1] - beat_times_sixteenths[0] #単位あたりの16分音符の秒での長さ
+#16分音符のtickでの単位あたりの長さ
+sixteenth_tick = int(mido.second2tick(_sixteenth_sec, ticks_per_beat=_ticks_per_beat, tempo=mido.bpm2tempo(_song_bpm)))
