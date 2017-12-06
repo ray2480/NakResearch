@@ -103,7 +103,8 @@ plt.xlim(xmin=0)
 plt.ylim(0)
 
 #peak_picking
-onset_frames = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.5, 5)
+#onset_frames = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.5, 5)
+onset_frames = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.8, 5)
 
 #検出したピークに縦線を描画(カラーバー）
 plt.plot(t, onset_envelope)
@@ -116,5 +117,31 @@ plt.ylim(0)
 clicks = librosa.clicks(frames=onset_frames, sr=sr, hop_length=hop_length, length=N)
 
 #クリック音と共に出力
-librosa.output.write_wav('01.Track_1.background_percussive_click.wav', background_percussive+clicks, sr)
+#librosa.output.write_wav('01.Track_1.background_percussive_click.wav', background_percussive+clicks, sr)
+librosa.output.write_wav('01.Track_1.background_percussive_click_delta08.wav', background_percussive+clicks, sr)
 
+#RWC-MDB-P-2001-M06の01はbpm = 90なのでnumpyでarrayをつくる　やることは16分でクォンタイズ
+#BPM90で１小節が2.666666...秒
+#beat, tempoの取得
+tempo, beat_times = librosa.beat.beat_track(x, sr=sr, start_bpm=90, units='time')
+#アウフタクトの除去
+beat_times_omitted = beat_times[1:]
+#16分刻みのクォンタイズ値を生成
+beat_times_sixteenths = []
+for i in range(len(beat_times_omitted) - 1):
+  sixteenths_space = np.linspace(beat_times_omitted[i], beat_times_omitted[i+1], 5)
+  beat_times_sixteenths = np.hstack((beat_times_sixteenths, sixteenths_space))
+#16分にクォンタイズ
+beat_times_omitted_quantized = []
+sixteenths_index = []
+auftakt_sixteenths_num = 6
+for onset in librosa.frames_to_time(onset_frames, sr=sr, hop_length=hop_length):
+  index = np.argmin(np.absolute(beat_times_sixteenths - onset))
+  sixteenths_index.append(index)
+  beat_times_omitted_quantized.append(beat_times_sixteenths[index])
+#出力
+clicks = librosa.clicks(beat_times_omitted_quantized, sr=sr, length=len(background_percussive))
+librosa.output.write_wav(' 01.Track_1.background_percussive_quantized.wav', background_percussive+clicks, sr)
+
+#オンセットの位置を小節で考える
+beat_times_omitted_quantized = 
