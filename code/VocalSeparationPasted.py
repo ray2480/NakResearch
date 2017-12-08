@@ -134,21 +134,91 @@ for i in range(len(beat_times_omitted) - 1):
 #16分にクォンタイズ
 beat_times_omitted_quantized = []
 sixteenths_index = []
-auftakt_sixteenths_num = 6
 for onset in librosa.frames_to_time(onset_frames, sr=sr, hop_length=hop_length):
   index = np.argmin(np.absolute(beat_times_sixteenths - onset))
   sixteenths_index.append(index)
   beat_times_omitted_quantized.append(beat_times_sixteenths[index])
+sixteenths_index = np.array(sixteenths_index)
 #出力
 clicks = librosa.clicks(beat_times_omitted_quantized, sr=sr, length=len(background_percussive))
 librosa.output.write_wav(' 01.Track_1.background_percussive_quantized.wav', background_percussive+clicks, sr)
+
+##########################################################
+ 
+#librosaの関数でnovelty functionのonset_envelop生成(hop_length違う）
+hop_length = 256
+onset_envelope = librosa.onset.onset_strength(background_percussive, sr=sr, hop_length=hop_length)
+
+tempo, beat_times = librosa.beat.beat_track(x, sr=sr, start_bpm=90, units='time')
+#アウフタクトの除去
+beat_times_omitted = beat_times[1:]
+
+#16分刻みのクォンタイズ値を生成
+beat_times_sixteenths = []
+for i in range(len(beat_times_omitted) - 1):
+  sixteenths_space = np.linspace(beat_times_omitted[i], beat_times_omitted[i+1], 5)
+  beat_times_sixteenths = np.hstack((beat_times_sixteenths, sixteenths_space))
+  
+#16分にクォンタイズ
+i = 0
+onset_frames = np.array([])
+#onsetを16分単位で抽出
+"""
+for i in range(len(beat_times) - 1):
+  wait = int(librosa.time_to_samples(beat_times[i+1] - beat_times[i],  sr=sr) / 4) #16分のサンプル数
+  start_quarter_frame = int(librosa.time_to_frames(beat_times[i], sr=sr, hop_length=hop_length))
+  end_quarter_frame = int(librosa.time_to_frames(beat_times[i+1], sr=sr, hop_length=hop_length))
+  onset_envelope_part = onset_envelope[start_quarter_frame:end_quarter_frame+1]
+  onset_frames_part = librosa.util.peak_pick(onset_envelope_part, 7, 7, 7, 7, 0.8, wait - 1) + end_quarter_frame
+  j = 0
+  #フレームがかぶってしまっているので同じ値を持っていたら（重複していたら）削除
+  for j in range(len(onset_frames_part)):
+    if onset_frames_part[j] in onset_frames:
+      np.delete(onset_frames_part, j)
+  onset_frames = np.hstack((onset_frames, onset_frames_part))
+"""
+wait = librosa.time_to_samples(np.min(np.diff(beat_times_omitted))/4,sr=sr)
+#wait = librosa.time_to_frames(np.min(np.diff(beat_times_omitted))/4,sr=sr, hop_length=hop_length)
+onset_frames = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.5, wait - 1)
+
+#intempoな16分にクォンタイズ(midiにあわせるため）
+"""
+beat_times_omitted_quantized = []
+sixteenths_index = []
+for onset in librosa.frames_to_time(onset_frames, sr=sr, hop_length=hop_length):
+  index = np.argmin(np.absolute(beat_times_sixteenths - onset))
+  sixteenths_index.append(index)
+  beat_times_omitted_quantized.append(beat_times_sixteenths[index])
+sixteenths_index = np.array(sixteenths_index)
+"""
+###########################################################
 
 import mido
 #MIDIデータの作成
 _song_bpm = 90 #曲のbpm
 _ticks_per_beat = 480 #デフォルト
+auftakt_sixteenths_num = 6
 _sixteenth_sec = beat_times_sixteenths[1] - beat_times_sixteenths[0] #単位あたりの16分音符の秒での長さ
 #16分音符のtickでの単位あたりの長さ
-sixteenth_tick = int(mido.second2tick(_sixteenth_sec, ticks_per_beat=_ticks_per_beat, tempo=mido.bpm2tempo(_song_bpm)))
+#sixteenth_tick = int(mido.second2tick(_sixteenth_sec, ticks_per_beat=_ticks_per_beat, tempo=mido.bpm2tempo(_song_bpm)))
+sixteenth_tick = 120
 #各音符の配置される場所（tick)
-beat_times_ticks = sixteenths_index * sixteenth_tick
+beat_times_ticks = sixteenths_index * sixteenth_tick #omittedのほう採用してるから最初の６個は０になっちゃってる
+beat_times_ticks_omitted = beat_times_ticks[auftakt_sixteenths_num-1:]
+#事前処理
+smf = mido.MidiFile(ticks_per_beat=_ticks_per_beat)
+track = mido.MidiTrack()
+track.append(mido.MetaMessage('set_tempo',tempo=mido.bpm2tempo(_song_bpm)))
+track.append(mido.Message('program_change', program=1)) #音色 
+#音符入力
+#最初だけデルタタイム入れる
+beat_times_ticks_omitted_diff = np.diff(beat_times_ticks_omitted)
+track.append(mido.Message('note_off',time=beat_times_ticks_omitted[0])) 
+for delta in beat_times_ticks_omitted_diff:
+  track.append(mido.Message('note_on', velocity=100, note=librosa.note_to_midi('F3')))
+  track.append(mido.Message('note_off',time=delta)) 
+  track.append(mido.Message('note_off',note=librosa.note_to_midi('F3')))
+track.append(mido.MetaMessage('end_of_track'))
+smf.tracks.append(track)
+#midiの出力
+smf.save('01_beat.mid')
