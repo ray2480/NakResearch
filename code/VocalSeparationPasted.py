@@ -177,10 +177,25 @@ for i in range(len(beat_times) - 1):
       np.delete(onset_frames_part, j)
   onset_frames = np.hstack((onset_frames, onset_frames_part))
 """
-wait = librosa.time_to_samples(np.min(np.diff(beat_times_omitted))/4,sr=sr)
-#wait = librosa.time_to_frames(np.min(np.diff(beat_times_omitted))/4,sr=sr, hop_length=hop_length)
-onset_frames = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.5, wait - 1)
+#16分と8分のonset_framesを作成
+wait_16 = int(librosa.time_to_frames(np.min(np.diff(beat_times_omitted))/4,sr=sr, hop_length=hop_length))
+onset_frames_16 = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.5, wait_16)
+wait_8 = int(librosa.time_to_frames(np.min(np.diff(beat_times_omitted))/2,sr=sr, hop_length=hop_length))
+onset_frames_8 = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.5, wait_8)
 
+###裏箔のonset_framesを作成
+onset_frames_weak = onset_frames_16.tolist()
+for onset_frame_8 in onset_frames_8:
+  if onset_frame_8 in onset_frames_weak:
+    onset_frames_weak_index = onset_frames_weak.index(onset_frame_8)
+    del onset_frames_weak[onset_frames_weak_index]
+onset_frames_weak = np.array(onset_frames_weak) #weakというか裏拍
+#onset_frames_strong = onset_frames_8 嘘　8分の単位で入ってこない要素があるから
+"""
+裏拍の配列と16分の配列を比較
+1. 裏拍配列の前後に何もない→強拍配列にappend (←これやるなら裏拍配列の前後表拍は削除じゃなくて別の文字列とかにした方が良いのでは）
+2. 
+"""
 #intempoな16分にクォンタイズ(midiにあわせるため）
 """
 beat_times_omitted_quantized = []
