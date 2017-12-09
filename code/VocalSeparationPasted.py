@@ -182,29 +182,53 @@ wait_16 = int(librosa.time_to_frames(np.min(np.diff(beat_times_omitted))/4,sr=sr
 onset_frames_16 = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.5, wait_16)
 wait_8 = int(librosa.time_to_frames(np.min(np.diff(beat_times_omitted))/2,sr=sr, hop_length=hop_length))
 onset_frames_8 = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.5, wait_8)
+"""
+#onset_frames_8が表拍といってる訳じゃない 最初に来たものをとって8分でとばしてるだけだから裏拍を取ってる可能性は十分ありうる
+#onset_frames_8の次に来る音符と音符の間に飛ばしてしまった音符、つまりonset_frames_weakがある（裏拍じゃない）
+#onset_frames_weakはインデックスにすべき このインデックスを見つけたら前後どちらがonset_envelopにおいて強いか比較して
+#大きい方を採用 このときonset_frames_weakを採用すると以降のonset_frames_8がずれることになるので
+#もしonset_frames_weakを採用したら強配列にappendし、もう一度その位置から8分配列はpeak_pickをしていく（再帰的処理）
+#いや再起処理はpeak pickに対してではなく16分配列を8分間隔のstepでとって行く（あとweakも同じく）
+#それもいや、peak_pickをしないアプローチをとるならいったんインテンポの16分に全部アサインしてしまってしまえば同間隔でとりだせるから
+#元のインデックスだけちゃんと保持してしまえば関係ないところは0埋め、8部の場所は８、16分のところは16みたいなvalueをつけた
+#配列を作ってそっちで処理してしまえばなんとかなるのでは　そうすればずれにも対応できる
+
+"""
 
 ###裏箔のonset_framesを作成
 onset_frames_weak = onset_frames_16.tolist()
 for onset_frame_8 in onset_frames_8:
-  if onset_frame_8 in onset_frames_weak:
+  if onset_frame_8 in onset_frames_weak:# ***1
     onset_frames_weak_index = onset_frames_weak.index(onset_frame_8)
     del onset_frames_weak[onset_frames_weak_index]
 onset_frames_weak = np.array(onset_frames_weak) #weakというか裏拍
 #onset_frames_strong = onset_frames_8 嘘　8分の単位で入ってこない要素があるから
 """
 裏拍の配列と16分の配列を比較
-1. 裏拍配列の前後に何もない→強拍配列にappend (←これやるなら裏拍配列の前後表拍は削除じゃなくて別の文字列とかにした方が良いのでは）
-2. 
+強配列を作成、音符の採用方法は8分のステップ毎に16分（裏拍）配列を見て飛ばしていく　
+1. 裏拍配列の前に何もない→強拍配列にappend その後ろに表拍があるならそれを飛ばす
+(←これやるなら裏拍配列の前後表拍は削除じゃなくて別の文字列とかにした方が良いのでは　というより16分での裏拍のインデックスを把握すればよいのでは）
+2. 裏拍配列の前に表拍あり→前後のフレームとってonset_envelopの強度を比較して大きいほうを強に
+→もし表が大きいなら表が強、もし裏が大きいなら表は飛ばして裏を強にして次の表拍をとばす
+
+16分配列を1つずつ走査 for i in range(len(onset_frames_16)):
+16分で次が続いてるかどうかの判断　
+
 """
+
+
 #intempoな16分にクォンタイズ(midiにあわせるため）
 """
-beat_times_omitted_quantized = []
-sixteenths_index = []
-for onset in librosa.frames_to_time(onset_frames, sr=sr, hop_length=hop_length):
-  index = np.argmin(np.absolute(beat_times_sixteenths - onset))
-  sixteenths_index.append(index)
-  beat_times_omitted_quantized.append(beat_times_sixteenths[index])
-sixteenths_index = np.array(sixteenths_index)
+def quantizeOnsetFramesBeatsToIntempo16Beats(onset_frames, sr, hop_length)
+  beat_times_omitted_quantized = []
+  sixteenths_index = []
+  for onset in librosa.frames_to_time(onset_frames, sr=sr, hop_length=hop_length):
+    index = np.argmin(np.absolute(beat_times_sixteenths - onset))
+    sixteenths_index.append(index)
+    beat_times_omitted_quantized.append(beat_times_sixteenths[index])
+  sixteenths_index = np.array(sixteenths_index)
+  
+  return intempo_16beats_quantized_beats, sixteenths_index
 """
 ###########################################################
 
