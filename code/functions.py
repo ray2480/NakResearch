@@ -17,35 +17,52 @@ def beatTrackPer16th(x, bpm, sr=22050, hop_length=512, units='frames', offset_16
     tempo, beat_times = librosa.beat.beat_track(x, sr=sr, hop_length=hop_length, start_bpm=bpm, units='samples')
   else:
     tempo, beat_times = librosa.beat.beat_track(x, sr=sr, hop_length=hop_length, start_bpm=bpm, units='frames')
-  beat_frames_per_16th = []
+  beat_frames_per_16th_note = []
   for i in range(len(beat_times) - 1):
     interval_per_16th_units = np.linspace(beat_times[i], beat_times[i+1], 5)
-    beat_frames_per_16th = np.hstack((beat_frames_per_16th, interval_per_16th_units))
+    beat_frames_per_16th_note = np.hstack((beat_frames_per_16th_note, interval_per_16th_units))
   if offset_16th_notes > 0:
-    beat_frames_per_16th = beat_frames_per_16th[offset_16th_notes:]
-  return beat_frames_per_16th
+    beat_frames_per_16th_note = beat_frames_per_16th_note[offset_16th_notes:]
+  return beat_frames_per_16th_note
 
-def quantizeOnsetFramesPer16thNote(onset_frames, beat_frames_per_16th):
+def quantizeOnsetFramesPer16thNote(onset_frames, beat_frames_per_16th_note):
   quantized_onset_frames_per_16th_note = []
   index_of_16th_notes = []
   for onset in onset_frames:
-    index = np.argmin(np.absolute(beat_frames_per_16th - onset))
+    index = np.argmin(np.absolute(beat_frames_per_16th_note - onset))
     index_of_16th_notes.append(index)
-    quantized_onset_frames_per_16th_note.append(beat_frames_per_16th[index])
-  return quantized_onset_frames_per_16th_note, index_of_16th_notes
+    quantized_onset_frames_per_16th_note.append(beat_frames_per_16th_note[index])
+  return quantized_onset_frames_per_16th_note, onset_frames_index_of_16th_notes
 
-def getStrongOnsetFrames(onset_envelop, beat_frames_per_16th, index_of_16th_notes):
+def getStrongOnsetFrames(onset_envelop, beat_frames_per_16th_note, onset_frames_index_of_16th_notes):
   #本当にdelでちゃんと次の音符飛ばしが出来ているかちゃんと検証する必要あり（もしかしたらそうなってないかもしれない）
   strong_onset_frames = []
+  strong_onset_frames_index_of_16th_notes = []
   i = 0
-  for i in range(len(index_of_16th_notes) - 1):
-    if index_of_16th_notes[i+1] - index_of_16th_notes[i] == 1: #16分音符が隣り合っている
-      if onset_envelop[beat_frames_per_16th[index_of_16th_notes[i]]] >= onset_envelop[beat_frames_per_16th[index_of_16th_notes[i+1]]]:
-        strong_onset_frames.append(beat_frames_per_16th[index_of_16th_notes[i]])
-        del index_of_16th_notes[i+1]
+  for i in range(len(onset_frames_index_of_16th_notes) - 1):
+    if onset_frames_index_of_16th_notes[i+1] - onset_frames_index_of_16th_notes[i] == 1: #16分音符が隣り合っている
+      if onset_envelop[beat_frames_per_16th_note[onset_frames_index_of_16th_notes[i]]] >= onset_envelop[beat_frames_per_16th_note[onset_frames_index_of_16th_notes[i+1]]]:
+        index = onset_frames_index_of_16th_notes[i]
+        strong_onset_frames.append(beat_frames_per_16th_note[index])
+        strong_onset_frames_index_of_16th_notes.append(index)
+        del onset_frames_index_of_16th_notes[i+1]
       else:
-        strong_onset_frames.append(beat_frames_per_16th[index_of_16th_notes[i+1]])
-        del index_of_16th_notes[i]
+        index = onset_frames_index_of_16th_notes[i+1]
+        strong_onset_frames.append(beat_frames_per_16th_note[onset_frames_index_of_16th_notes[i+1]])
+        strong_onset_frames_index_of_16th_notes.append(index)
+        del onset_frames_index_of_16th_notes[i]
     else:
-      strong_onset_frames.append(beat_frames_per_16th[index_of_16th_notes[i]])
-  return strong_onset_frames
+      index = onset_frames_index_of_16th_notes[i]
+      strong_onset_frames.append(beat_frames_per_16th_note[onset_frames_index_of_16th_notes[i]])
+      strong_onset_frames_index_of_16th_notes.append(index)
+  return strong_onset_frames, strong_onset_frames_index_of_16th_notes
+
+def getWeakOnsetFrames(strong_onset_frames_index_of_16th_notes, onset_frames_index_of_16th_notes, beat_frames_per_16th_note):
+  weak_onset_frames = []
+  for strong_index in strong_onset_frames_index_of_16th_notes:
+    del onset_frames_index_of_16th_notes[strong_index]
+  weak_onset_frames_index_of_16th_notes = onset_frames_index_of_16th_notes
+  for weak_index in weak_onset_frames_index_of_16th_notes:
+    weak_onset_frames.append(beat_frames_per_16th_note[weak_index])
+  return weak_onset_frames, weak_onset_frames_index_of_16th_notes
+  
