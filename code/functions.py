@@ -32,5 +32,20 @@ def quantizeOnsetFramesPer16thNote(onset_frames, beat_frames_per_16th):
     index = np.argmin(np.absolute(beat_frames_per_16th - onset))
     index_of_16th_notes.append(index)
     quantized_onset_frames_per_16th_note.append(beat_frames_per_16th[index])
-  index_of_16th_notes = np.array(index_of_16th_notes)
   return quantized_onset_frames_per_16th_note, index_of_16th_notes
+
+def getStrongOnsetFrames(onset_envelop, beat_frames_per_16th, index_of_16th_notes):
+  #本当にdelでちゃんと次の音符飛ばしが出来ているかちゃんと検証する必要あり（もしかしたらそうなってないかもしれない）
+  strong_onset_frames = []
+  i = 0
+  for i in range(len(index_of_16th_notes) - 1):
+    if index_of_16th_notes[i+1] - index_of_16th_notes[i] == 1: #16分音符が隣り合っている
+      if onset_envelop[beat_frames_per_16th[index_of_16th_notes[i]]] >= onset_envelop[beat_frames_per_16th[index_of_16th_notes[i+1]]]:
+        strong_onset_frames.append(beat_frames_per_16th[index_of_16th_notes[i]])
+        del index_of_16th_notes[i+1]
+      else:
+        strong_onset_frames.append(beat_frames_per_16th[index_of_16th_notes[i+1]])
+        del index_of_16th_notes[i]
+    else:
+      strong_onset_frames.append(beat_frames_per_16th[index_of_16th_notes[i]])
+  return strong_onset_frames
