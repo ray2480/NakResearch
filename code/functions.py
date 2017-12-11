@@ -4,7 +4,7 @@ hop_length = 256
 onset_envelope = librosa.onset.onset_strength(background_percussive, sr=sr, hop_length=hop_length)
 onset_frames = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.8, 5)
 
-def beatTrackPer16th(x, bpm, sr=22050, hop_length=512, units='frames', offset_16th_notes=0):
+def trackBeatsPer16thNote(x, bpm, sr=22050, hop_length=512, units='frames', offset_16th_notes=0):
   """
   clickで書き出すと16分音符毎にクリック音が鳴らせるようにビートトラッキングする
   16分音符毎にインデックスが割り当てられている
