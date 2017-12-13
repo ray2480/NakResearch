@@ -1,5 +1,4 @@
-hop_length = 256
-
+hop_length = 512
 
 onset_envelope = librosa.onset.onset_strength(background_percussive, sr=sr, hop_length=hop_length)
 onset_frames = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.8, 5)
@@ -27,21 +26,21 @@ def trackBeatsPer16thNote(x, bpm, sr=22050, hop_length=512, units='frames', offs
 
 def quantizeOnsetFramesPer16thNote(onset_frames, beat_frames_per_16th_note):
   quantized_onset_frames_per_16th_note = []
-  index_of_16th_notes = []
+  onset_frames_index_of_16th_notes = []
   for onset in onset_frames:
     index = np.argmin(np.absolute(beat_frames_per_16th_note - onset))
-    index_of_16th_notes.append(index)
+    onset_frames_index_of_16th_notes.append(index)
     quantized_onset_frames_per_16th_note.append(beat_frames_per_16th_note[index])
   return quantized_onset_frames_per_16th_note, onset_frames_index_of_16th_notes
 
-def getStrongOnsetFrames(onset_envelop, beat_frames_per_16th_note, onset_frames_index_of_16th_notes):
+def getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames_index_of_16th_notes):
   #本当にdelでちゃんと次の音符飛ばしが出来ているかちゃんと検証する必要あり（もしかしたらそうなってないかもしれない）
   strong_onset_frames = []
   strong_onset_frames_index_of_16th_notes = []
   i = 0
   for i in range(len(onset_frames_index_of_16th_notes) - 1):
     if onset_frames_index_of_16th_notes[i+1] - onset_frames_index_of_16th_notes[i] == 1: #16分音符が隣り合っている
-      if onset_envelop[beat_frames_per_16th_note[onset_frames_index_of_16th_notes[i]]] >= onset_envelop[beat_frames_per_16th_note[onset_frames_index_of_16th_notes[i+1]]]:
+      if onset_envelope[beat_frames_per_16th_note[onset_frames_index_of_16th_notes[i]]] >= onset_envelope[beat_frames_per_16th_note[onset_frames_index_of_16th_notes[i+1]]]:
         index = onset_frames_index_of_16th_notes[i]
         strong_onset_frames.append(beat_frames_per_16th_note[index])
         strong_onset_frames_index_of_16th_notes.append(index)
