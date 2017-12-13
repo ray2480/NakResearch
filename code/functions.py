@@ -1,7 +1,8 @@
+import copy
 hop_length = 512
 bpm = 90
 
-
+background_percussive, sr = librosa.load('01.isft.background.perc.wav')
 onset_envelope = librosa.onset.onset_strength(background_percussive, sr=sr, hop_length=hop_length)
 onset_frames = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.8, 5)
 beat_frames_per_16th_note = trackBeatsPer16thNote(background_percussive, bpm, sr=sr, hop_length=hop_length, offset_16th_notes=0)
@@ -37,7 +38,7 @@ def getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames
   #本当にdelでちゃんと次の音符飛ばしが出来ているかちゃんと検証する必要あり（もしかしたらそうなってないかもしれない）
   strong_onset_frames = []
   strong_onset_frames_index_of_16th_notes = []
-  onset_frames_index_of_16th_notes_removal  = onset_frames_index_of_16th_notes
+  onset_frames_index_of_16th_notes_removal = copy.deepcopy(onset_frames_index_of_16th_notes)
   i = 0
   while i < len(onset_frames_index_of_16th_notes_removal) - 1:
     diff_onset_frames_index_of_16th_notes = onset_frames_index_of_16th_notes_removal[i+1] - onset_frames_index_of_16th_notes_removal[i]
@@ -47,8 +48,8 @@ def getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames
         strong_onset_frames.append(beat_frames_per_16th_note[index])
         strong_onset_frames_index_of_16th_notes.append(index)
         del onset_frames_index_of_16th_notes_removal[i+1]
-        while onset_frames_index_of_16th_notes_removal[i+1] - onset_frames_index_of_16th_notes_removal[i] <= 1: #同じフレームをとってしまっているものは全消去
-          del onset_frames_index_of_16th_notes_removal[i+1]
+        #while onset_frames_index_of_16th_notes_removal[i+1] - onset_frames_index_of_16th_notes_removal[i] <= 1: #同じフレームをとってしまっているものは全消去
+       #   del onset_frames_index_of_16th_notes_removal[i+1]
       else:
         index = onset_frames_index_of_16th_notes_removal[i+1]
         strong_onset_frames.append(beat_frames_per_16th_note[onset_frames_index_of_16th_notes_removal[i+1]])
@@ -59,11 +60,12 @@ def getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames
       strong_onset_frames.append(beat_frames_per_16th_note[onset_frames_index_of_16th_notes_removal[i]])
       strong_onset_frames_index_of_16th_notes.append(index)
     i = i + 1
+  #return list(set(strong_onset_frames)), list(set(strong_onset_frames_index_of_16th_notes)) sortの必要あり
   return strong_onset_frames, strong_onset_frames_index_of_16th_notes
 
 def getWeakOnsetFrames(strong_onset_frames_index_of_16th_notes, onset_frames_index_of_16th_notes, beat_frames_per_16th_note):
   weak_onset_frames = []
-  onset_frames_index_of_16th_notes_removal  = onset_frames_index_of_16th_notes
+  onset_frames_index_of_16th_notes_removal  = copy.deepcopy(onset_frames_index_of_16th_notes)
   #for strong_index in strong_onset_frames_index_of_16th_notes:
   i = 0
   while i < len(strong_onset_frames_index_of_16th_notes):
