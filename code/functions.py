@@ -60,8 +60,8 @@ def getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames
       strong_onset_frames.append(beat_frames_per_16th_note[onset_frames_index_of_16th_notes_removal[i]])
       strong_onset_frames_index_of_16th_notes.append(index)
     i = i + 1
-  #return list(set(strong_onset_frames)), list(set(strong_onset_frames_index_of_16th_notes)) sortの必要あり
-  return strong_onset_frames, strong_onset_frames_index_of_16th_notes
+  return list(set(strong_onset_frames)).sort(), list(set(strong_onset_frames_index_of_16th_notes)).sort() #sortの必要あり
+  #return strong_onset_frames, strong_onset_frames_index_of_16th_notes
 
 def getWeakOnsetFrames(strong_onset_frames_index_of_16th_notes, onset_frames_index_of_16th_notes, beat_frames_per_16th_note):
   weak_onset_frames = []
