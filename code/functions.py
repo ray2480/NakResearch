@@ -1,6 +1,8 @@
 import copy
+import mido
 hop_length = 512
 bpm = 90
+auftakt_16th_notes_number = 6
 
 background_percussive, sr = librosa.load('01.isft.background.perc.wav')
 onset_envelope = librosa.onset.onset_strength(background_percussive, sr=sr, hop_length=hop_length)
@@ -17,6 +19,10 @@ clicks_strong = librosa.clicks(frames=strong_onset_frames, sr=sr, hop_length=hop
 clicks_weak = librosa.clicks(frames=weak_onset_frames, sr=sr, hop_length=hop_length, click_freq=1000.0, click_duration=0.01, length=N)
 output_filename = '01.Track_1.background_percussive.strong_and_weak_onset_frames.wav'
 librosa.output.write_wav(output_filename, background_percussive+clicks_strong+clicks_weak, sr)
+
+#リズム譜作成
+midi_filename = '01_beat_from_createMidiRhythmScore.mid'
+createMidiRhythmScore(midi_filename, onset_frames_index_of_16th_notes, strong_onset_frames_index_of_16th_notes, weak_onset_frames_index_of_16th_notes, bpm, auftakt_16th_notes_number)
 
 def trackBeatsPer16thNote(x, bpm, sr=22050, hop_length=512, offset_16th_notes=0):
   """
@@ -79,4 +85,42 @@ def getWeakOnsetFrames(strong_onset_frames_index_of_16th_notes, onset_frames_ind
   for weak_index in weak_onset_frames_index_of_16th_notes:
     weak_onset_frames.append(beat_frames_per_16th_note[weak_index])
   return weak_onset_frames, weak_onset_frames_index_of_16th_notes
-  
+
+def createMidiRhythmScore(midi_filename, onset_frames_index_of_16th_notes, strong_onset_frames_index_of_16th_notes, weak_onset_frames_index_of_16th_notes, bpm, auftakt_16th_notes_number=0):
+  #MIDIデータの作成
+  #16分音符のtickでの単位あたりの長さ
+  ticks_per_16th_note = 120
+  ticks_per_beat = ticks_per_16th_note * 4 #4分音符は480がデフォルト
+  #各音符の配置される場所（tick)
+  onset_ticks = np.array(onset_frames_index_of_16th_notes) * ticks_per_16th_note
+  strong_onset_ticks = np.array(strong_onset_frames_index_of_16th_notes) * ticks_per_16th_note
+  weak_onset_ticks = np.array(weak_onset_frames_index_of_16th_notes) * ticks_per_16th_note
+  #auftaktの処理（本来mido自体をいじるべきだが便宜上ここで）
+  #onset_ticks = list(filter(lambda x: x >= ticks_per_16th_note * auftakt_16th_notes_number, onset_ticks))
+  #strong_onset_ticks = list(filter(lambda x: x >= ticks_per_16th_note * auftakt_16th_notes_number, strong_onset_ticks))
+  #weak_onset_ticks = list(filter(lambda x: x >= ticks_per_16th_note * auftakt_16th_notes_number, weak_onset_ticks))
+  #事前処理
+  smf = mido.MidiFile(ticks_per_beat=ticks_per_beat)
+  track = mido.MidiTrack()
+  track.append(mido.MetaMessage('set_tempo',tempo=mido.bpm2tempo(bpm)))
+  track.append(mido.Message('program_change', program=1)) #音色 
+  #音符入力
+  #最初だけデルタタイム入れる
+  onset_ticks_diff = np.diff(onset_ticks)
+  #auftaktの処理
+  track.append(mido.Message('note_off',time=(ticks_per_16th_note * 12))) 
+  i = 0
+  for i in range(len(onset_ticks) - 1):
+    delta = onset_ticks[i+1] - onset_ticks[i]
+    if onset_ticks[i] in strong_onset_ticks:
+      track.append(mido.Message('note_on', velocity=100, note=librosa.note_to_midi('F3')))
+      track.append(mido.Message('note_off',time=delta)) 
+      track.append(mido.Message('note_off',note=librosa.note_to_midi('F3')))
+    elif onset_ticks[i] in weak_onset_ticks:
+      track.append(mido.Message('note_on', velocity=50, note=librosa.note_to_midi('A3')))
+      track.append(mido.Message('note_off',time=delta)) 
+      track.append(mido.Message('note_off',note=librosa.note_to_midi('A3')))
+  track.append(mido.MetaMessage('end_of_track'))
+  smf.tracks.append(track)
+  #midiの出力
+  smf.save(midi_filename)
