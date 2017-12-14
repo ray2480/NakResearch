@@ -10,7 +10,13 @@ quantized_onset_frames_per_16th_note, onset_frames_index_of_16th_notes = quantiz
 strong_onset_frames, strong_onset_frames_index_of_16th_notes = getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames_index_of_16th_notes)
 weak_onset_frames, weak_onset_frames_index_of_16th_notes = getWeakOnsetFrames(strong_onset_frames_index_of_16th_notes, onset_frames_index_of_16th_notes, beat_frames_per_16th_note)
 
-
+N = len(background_percussive)
+T = N/float(sr)
+t = np.linspace(0, T, len(onset_envelope))
+clicks_strong = librosa.clicks(frames=strong_onset_frames, sr=sr, hop_length=hop_length, length=N)
+clicks_weak = librosa.clicks(frames=weak_onset_frames, sr=sr, hop_length=hop_length, click_freq=1000.0, click_duration=0.01, length=N)
+output_filename = '01.Track_1.background_percussive.strong_and_weak_onset_frames.wav'
+librosa.output.write_wav(output_filename, background_percussive+clicks_strong+clicks_weak, sr)
 
 def trackBeatsPer16thNote(x, bpm, sr=22050, hop_length=512, offset_16th_notes=0):
   """
@@ -65,7 +71,6 @@ def getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames
 def getWeakOnsetFrames(strong_onset_frames_index_of_16th_notes, onset_frames_index_of_16th_notes, beat_frames_per_16th_note):
   weak_onset_frames = []
   onset_frames_index_of_16th_notes_removal  = copy.deepcopy(onset_frames_index_of_16th_notes)
-  #for strong_index in strong_onset_frames_index_of_16th_notes:
   i = 0
   while i < len(strong_onset_frames_index_of_16th_notes):
     onset_frames_index_of_16th_notes_removal.remove(strong_onset_frames_index_of_16th_notes[i])
