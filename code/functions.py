@@ -10,6 +10,8 @@ quantized_onset_frames_per_16th_note, onset_frames_index_of_16th_notes = quantiz
 strong_onset_frames, strong_onset_frames_index_of_16th_notes = getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames_index_of_16th_notes)
 weak_onset_frames, weak_onset_frames_index_of_16th_notes = getWeakOnsetFrames(strong_onset_frames_index_of_16th_notes, onset_frames_index_of_16th_notes, beat_frames_per_16th_note)
 
+
+
 def trackBeatsPer16thNote(x, bpm, sr=22050, hop_length=512, offset_16th_notes=0):
   """
   clickで書き出すと16分音符毎にクリック音が鳴らせるようにビートトラッキングする
@@ -32,7 +34,7 @@ def quantizeOnsetFramesPer16thNote(onset_frames, beat_frames_per_16th_note):
     index = np.argmin(np.absolute(beat_frames_per_16th_note - onset))
     onset_frames_index_of_16th_notes.append(index)
     quantized_onset_frames_per_16th_note.append(beat_frames_per_16th_note[index])
-  return list(map(int, quantized_onset_frames_per_16th_note)), onset_frames_index_of_16th_notes
+  return sorted(list(set(list(map(int, quantized_onset_frames_per_16th_note))))), sorted(list(set(onset_frames_index_of_16th_notes)))
 
 def getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames_index_of_16th_notes):
   #本当にdelでちゃんと次の音符飛ばしが出来ているかちゃんと検証する必要あり（もしかしたらそうなってないかもしれない）
@@ -48,8 +50,6 @@ def getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames
         strong_onset_frames.append(beat_frames_per_16th_note[index])
         strong_onset_frames_index_of_16th_notes.append(index)
         del onset_frames_index_of_16th_notes_removal[i+1]
-        #while onset_frames_index_of_16th_notes_removal[i+1] - onset_frames_index_of_16th_notes_removal[i] <= 1: #同じフレームをとってしまっているものは全消去
-       #   del onset_frames_index_of_16th_notes_removal[i+1]
       else:
         index = onset_frames_index_of_16th_notes_removal[i+1]
         strong_onset_frames.append(beat_frames_per_16th_note[onset_frames_index_of_16th_notes_removal[i+1]])
@@ -60,8 +60,7 @@ def getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames
       strong_onset_frames.append(beat_frames_per_16th_note[onset_frames_index_of_16th_notes_removal[i]])
       strong_onset_frames_index_of_16th_notes.append(index)
     i = i + 1
-  return list(set(strong_onset_frames)).sort(), list(set(strong_onset_frames_index_of_16th_notes)).sort() #sortの必要あり
-  #return strong_onset_frames, strong_onset_frames_index_of_16th_notes
+  return strong_onset_frames, strong_onset_frames_index_of_16th_notes
 
 def getWeakOnsetFrames(strong_onset_frames_index_of_16th_notes, onset_frames_index_of_16th_notes, beat_frames_per_16th_note):
   weak_onset_frames = []
@@ -69,7 +68,7 @@ def getWeakOnsetFrames(strong_onset_frames_index_of_16th_notes, onset_frames_ind
   #for strong_index in strong_onset_frames_index_of_16th_notes:
   i = 0
   while i < len(strong_onset_frames_index_of_16th_notes):
-    del onset_frames_index_of_16th_notes_removal[strong_onset_frames_index_of_16th_notes[i]]
+    onset_frames_index_of_16th_notes_removal.remove(strong_onset_frames_index_of_16th_notes[i])
     i = i + 1
   weak_onset_frames_index_of_16th_notes = onset_frames_index_of_16th_notes_removal
   for weak_index in weak_onset_frames_index_of_16th_notes:
