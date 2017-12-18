@@ -5,21 +5,47 @@ import librosa
 import copy
 import mido
 
-#1曲目
 hop_length = 512
+#1曲目
 bpm = 90
 auftakt_16th_notes_number = 6
 #2曲目
 input_audio_filename = '02.Track_2.wav'
 bpm = 100
-hop_length = 512
+auftakt_16th_notes_number = 0
+#3曲目
+input_audio_filename = '03.Track_3.wav'
+bpm = 108
+auftakt_16th_notes_number = 0
+#4曲目
+input_audio_filename = '06.Track_6.wav'
+bpm = 120
+auftakt_16th_notes_number = 4
+#5曲目
+input_audio_filename = '08.Track_8.wav'
+bpm = 127
+auftakt_16th_notes_number = 0
+#6曲目
+input_audio_filename = '12.Track_12.wav'
+bpm = 121
 auftakt_16th_notes_number = 0
 
+#foreground, background, background_percussiveの出力ファイル名
+audio_filename_foreground = input_audio_filename + '_foreground.wav'
+audio_filename_background = input_audio_filename + '_background.wav'
+audio_filename_background_percussive = input_audio_filename + '_background_percussive.wav'
+
+#入力wavデータ読み込み、分離処理
 x, sr = librosa.load(input_audio_filename)
 S_foreground, S_background = separateMusicIntoForegroundAndBackground(x, sr)
 background_harmonic, background_percussive = separateMusicIntoHarmonicAndPercussive(S_background)
 
-background_percussive, sr = librosa.load('01.isft.background.perc.wav')
+#foreground, background, background_percussiveのwavファイル書き出し
+librosa.output.write_wav(audio_filename_foreground, librosa.istft(S_foreground), sr)
+librosa.output.write_wav(audio_filename_background, librosa.istft(S_background), sr)
+librosa.output.write_wav(audio_filename_background_percussive, background_percussive, sr)
+
+#ビート処理
 onset_envelope = librosa.onset.onset_strength(background_percussive, sr=sr, hop_length=hop_length)
 onset_frames = librosa.util.peak_pick(onset_envelope, 7, 7, 7, 7, 0.8, 5)
 beat_frames_per_16th_note = trackBeatsPer16thNote(background_percussive, bpm, sr=sr, hop_length=hop_length, offset_16th_notes=0)
@@ -27,16 +53,17 @@ quantized_onset_frames_per_16th_note, onset_frames_index_of_16th_notes = quantiz
 strong_onset_frames, strong_onset_frames_index_of_16th_notes = getStrongOnsetFrames(onset_envelope, beat_frames_per_16th_note, onset_frames_index_of_16th_notes)
 weak_onset_frames, weak_onset_frames_index_of_16th_notes = getWeakOnsetFrames(strong_onset_frames_index_of_16th_notes, onset_frames_index_of_16th_notes, beat_frames_per_16th_note)
 
+#クリック音入力
 N = len(background_percussive)
 T = N/float(sr)
-t = np.linspace(0, T, len(onset_envelope))
+#t = np.linspace(0, T, len(onset_envelope))
 clicks_strong = librosa.clicks(frames=strong_onset_frames, sr=sr, hop_length=hop_length, length=N)
 clicks_weak = librosa.clicks(frames=weak_onset_frames, sr=sr, hop_length=hop_length, click_freq=1000.0, click_duration=0.01, length=N)
-output_filename = '01.Track_1.background_percussive.strong_and_weak_onset_frames.wav'
-librosa.output.write_wav(output_filename, background_percussive+clicks_strong+clicks_weak, sr)
+audio_filename_background_percussive_clicks = audio_filename_background_percussive + '_clicks.wav'
+librosa.output.write_wav(audio_filename_background_percussive_clicks, background_percussive+clicks_strong+clicks_weak, sr)
 
 #リズム譜作成
-midi_filename = '01_beat_from_createMidiRhythmScore.mid'
+midi_filename = input_audio_filename + '.mid'
 createMidiRhythmScore(midi_filename, onset_frames_index_of_16th_notes, strong_onset_frames_index_of_16th_notes, weak_onset_frames_index_of_16th_notes, bpm, auftakt_16th_notes_number)
 
 
@@ -162,7 +189,8 @@ def createMidiRhythmScore(midi_filename, onset_frames_index_of_16th_notes, stron
   #最初だけデルタタイム入れる
   onset_ticks_diff = np.diff(onset_ticks)
   #auftaktの処理
-  track.append(mido.Message('note_off',time=(ticks_per_16th_note * 12))) 
+  #track.append(mido.Message('note_off',time=(ticks_per_16th_note * 12))) 
+  track.append(mido.Message('note_off',time=(ticks_per_16th_note * 16 ) - (ticks_per_16th_note * auftakt_16th_notes_number))) 
   i = 0
   for i in range(len(onset_ticks) - 1):
     delta = onset_ticks[i+1] - onset_ticks[i]
