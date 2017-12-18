@@ -1,8 +1,23 @@
+from __future__ import print_function
+import numpy as np
+import matplotlib.pyplot as plt
+import librosa
 import copy
 import mido
+
+#1曲目
 hop_length = 512
 bpm = 90
 auftakt_16th_notes_number = 6
+#2曲目
+input_audio_filename = '02.Track_2.wav'
+bpm = 100
+hop_length = 512
+auftakt_16th_notes_number = 0
+
+x, sr = librosa.load(input_audio_filename)
+S_foreground, S_background = separateMusicIntoForegroundAndBackground(x, sr)
+background_harmonic, background_percussive = separateMusicIntoHarmonicAndPercussive(S_background)
 
 background_percussive, sr = librosa.load('01.isft.background.perc.wav')
 onset_envelope = librosa.onset.onset_strength(background_percussive, sr=sr, hop_length=hop_length)
@@ -23,6 +38,45 @@ librosa.output.write_wav(output_filename, background_percussive+clicks_strong+cl
 #リズム譜作成
 midi_filename = '01_beat_from_createMidiRhythmScore.mid'
 createMidiRhythmScore(midi_filename, onset_frames_index_of_16th_notes, strong_onset_frames_index_of_16th_notes, weak_onset_frames_index_of_16th_notes, bpm, auftakt_16th_notes_number)
+
+
+def separateMusicIntoForegroundAndBackground(x, sr):
+  # compute the spectrogram magnitude and phase
+  S_full, phase = librosa.magphase(librosa.stft(x))
+
+  # We'll compare frames using cosine similarity, and aggregate similar frames
+  # by taking their (per-frequency) median value.
+  #
+  # To avoid being biased by local continuity, we constrain similar frames to be
+  # separated by at least 2 seconds.
+  #
+  # This suppresses sparse/non-repetetitive deviations from the average spectrum,
+  # and works well to discard vocal elements.
+  S_filter = librosa.decompose.nn_filter(S_full, aggregate=np.median, metric='cosine', width=int(librosa.time_to_frames(2, sr=sr)))
+
+  # The output of the filter shouldn't be greater than the input
+  # if we assume signals are additive.  Taking the pointwise minimium
+  # with the input spectrum forces this.
+  S_filter = np.minimum(S_full, S_filter)
+
+  # We can also use a margin to reduce bleed between the vocals and instrumentation masks.
+  # Note: the margins need not be equal for foreground and background separation
+  margin_i, margin_v = 2, 10
+  power = 2
+  mask_i = librosa.util.softmask(S_filter, margin_i * (S_full - S_filter), power=power)
+  mask_v = librosa.util.softmask(S_full - S_filter, margin_v * S_filter, power=power)
+
+  # Once we have the masks, simply multiply them with the input spectrum
+  # to separate the components
+  S_foreground = mask_v * S_full
+  S_background = mask_i * S_full
+  
+  return S_foreground, S_background
+
+def separateMusicIntoHarmonicAndPercussive(D):
+  #harmonicとpercussiveに分離
+  S_harmonic, S_percussive = librosa.decompose.hpss(D)
+  return librosa.istft(S_harmonic), librosa.istft(S_percussive)
 
 def trackBeatsPer16thNote(x, bpm, sr=22050, hop_length=512, offset_16th_notes=0):
   """
