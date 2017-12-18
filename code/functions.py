@@ -29,6 +29,35 @@ auftakt_16th_notes_number = 0
 input_audio_filename = '12.Track_12.wav'
 bpm = 121
 auftakt_16th_notes_number = 0
+#7曲目
+input_audio_filename = '13.Track_13.wav'
+bpm = 103
+auftakt_16th_notes_number = 0
+#8曲目
+input_audio_filename = '14.Track_14.wav'
+bpm = 88
+auftakt_16th_notes_number = 0
+#9曲目
+input_audio_filename = 'M02_01.Track_1.wav'
+bpm = 97
+auftakt_16th_notes_number = 0
+#10曲目
+input_audio_filename = 'M02_03.Track_3.wav'
+bpm = 130
+auftakt_16th_notes_number = 0
+#11曲目
+input_audio_filename = 'M02_02.Track_2.wav'
+bpm = 112
+auftakt_16th_notes_number = 0
+#12曲目
+input_audio_filename = 'M02_06.Track_6.wav'
+bpm = 135
+auftakt_16th_notes_number = 0
+
+input_audio_filename_array = ['03.Track_3.wav', '06.Track_6.wav', '08.Track_8.wav', '12.Track_12.wav', '13.Track_13.wav',
+                              '14.Track_14.wav', 'M02_01.Track_1.wav', 'M02_03.Track_3.wav', 'M02_02.Track_2.wav', 'M02_06.Track_6.wav']
+input_bpm_array = [108, 120, 127, 121, 103, 88, 97, 130, 112, 135]
+auftakt_16th_notes_number_array = [0, 4, 0, 0, 0, 0, 0, 0, 0, 0]
 
 #foreground, background, background_percussiveの出力ファイル名
 audio_filename_foreground = input_audio_filename + '_foreground.wav'
