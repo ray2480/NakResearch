@@ -236,5 +236,10 @@ def createMidiRhythmScore(midi_filename, onset_frames_index_of_16th_notes, stron
   #midiの出力
   smf.save(midi_filename)
   
-  def createMidiForBacking(strong_onset_frames, weak_onset_frames):
-    
+#def createMidiForBacking(strong_onset_frames, weak_onset_frames):
+def 
+"""
+16分音符4個か8個単位で区切ってコードを入力
+コードのリストを入力すると４分か２分音符単位でstrong, weakに沿って打ち込んでく
+
+"""
