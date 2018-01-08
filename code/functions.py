@@ -236,6 +236,15 @@ def createMidiRhythmScore(midi_filename, onset_frames_index_of_16th_notes, stron
   #midiの出力
   smf.save(midi_filename)
   
+  
+def midi():
+  if(小節の頭or３拍め):
+    コードを追加、セット
+  if (strong):
+    root音入れる
+  if (weak) :
+    5th入れる
+  
 #def createMidiForBacking(strong_onset_frames, weak_onset_frames):
 def 
 """
