@@ -58,7 +58,8 @@ def trackBeatsPer16thNote(x, bpm, sr=22050, hop_length=512, offset_16th_notes=0)
     for i in range(len(beat_samples) - 1):
         interval_per_16th_units = librosa.samples_to_frames(np.linspace(beat_samples[i], beat_samples[i + 1], 5),
                                                             hop_length=hop_length)
-        beat_frames_per_16th_note = np.hstack((beat_frames_per_16th_note, interval_per_16th_units))
+        print(interval_per_16th_units[0:4])
+        beat_frames_per_16th_note = np.hstack((beat_frames_per_16th_note, interval_per_16th_units[0:4]))
     if offset_16th_notes > 0:
         beat_frames_per_16th_note = beat_frames_per_16th_note[offset_16th_notes:]
     return beat_frames_per_16th_note.astype(np.int)
