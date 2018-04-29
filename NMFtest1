@@ -1,0 +1,7 @@
+import librosa
+import numpy as np
+
+x, sr = librosa.load("14.Track_14.wav")
+S = np.abs(librosa.stft(x))
+W, U = librosa.decompose.decompose(S, n_components=11)
+
