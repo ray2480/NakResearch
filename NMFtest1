@@ -7,7 +7,7 @@ x, sr = librosa.load(input_filename)
 S = np.abs(librosa.stft(x))
 W, U = librosa.decompose.decompose(S, n_components=n_components)
 
-for i in n_components:
+for i in range(n_components):
   w[i] = W[:,i].reshape(W.shape[0], 1)  #shapeで2次元配列の次元数を取り出して1次元配列を2次元配列にする
   u[i] = U[i].reshape(1, U.shape[1])
   s[i] = w[i] * u[i]
