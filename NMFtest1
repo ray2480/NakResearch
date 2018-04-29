@@ -3,24 +3,18 @@ import numpy as np
 
 n_components = 11
 input_filename = "14.Track_14.wav"
-x, sr = librosa.load(input_filename)
-S = np.abs(librosa.stft(x))import librosa
-import numpy as np
-
-n_components = 11
-input_filename = "14.Track_14.wav"
-x, sr = librosa.load(input_filename)
-S = np.abs(librosa.stft(x))
+X, sr = librosa.load(input_filename)
+S = np.abs(librosa.stft(X))
 W, U = librosa.decompose.decompose(S, n_components=n_components)
 
 for i in range(n_components):
-  w[i] = W[:,i].reshape(W.shape[0], 1)  #shapeで2次元配列の次元数を取り出して1次元配列を2次元配列にする
-  u[i] = U[i].reshape(1, U.shape[1])
-  s[i] = w[i] * u[i]
-  x[i] = librosa.istft(s[i])
+  w = W[:,i].reshape(W.shape[0], 1)  #shapeで2次元配列の次元数を取り出して1次元配列を2次元配列にする
+  u = U[i].reshape(1, U.shape[1])
+  s = w * u
+  x = librosa.istft(s)
   output_filename = input_filename + " nmf" + str(i) + ".wav" 
-  librosa.output.write_wav(output_filename, x[i], sr)
+  librosa.output.write_wav(output_filename, x, sr)
 
-x_abs = librosa.istft(S)
+X_abs = librosa.istft(S)
 output_filename = input_filename + " abs.wav"
-librosa.output.write_wav(output_filename, x_abs, sr)
+librosa.output.write_wav(output_filename, X_abs, sr)
